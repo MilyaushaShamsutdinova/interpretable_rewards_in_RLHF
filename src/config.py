@@ -8,7 +8,7 @@ SEED=42
 # Model configuration
 BASE_MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
 JUDGE_MODEL_NAME = BASE_MODEL_NAME
-
+ADAPTER_CLASS = "lora"
 
 # Dataset configuration
 DATASET_NAME = "nvidia/HelpSteer2"
