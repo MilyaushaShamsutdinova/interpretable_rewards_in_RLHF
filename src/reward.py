@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 import re
 import logging
@@ -6,14 +7,18 @@ from tenacity import retry, stop_after_attempt, wait_fixed, RetryError
 import time
 from src import config, utils
 
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
-class ExplainableRewardModel:
+class ExplainableRewardModel(nn.Module):
     """
     Calculates rewards based on an LLM-as-a-Judge scoring multiple dimensions.
     """
     def __init__(self, model_name=config.JUDGE_MODEL_NAME, device=None):
+        super().__init__()
         self.model_name = model_name
         self.device = device if device else utils.get_device()
         logger.info(f"Initializing explainable RM using judge: {self.model_name} on device {self.device}")
@@ -156,6 +161,9 @@ class ExplainableRewardModel:
             logger.debug(f"  Aggregated Reward: {final_reward:.4f}")
 
         return torch.tensor(batch_rewards, dtype=torch.float32).to(self.device)
+    
+    def forward(self, prompts: list[str], responses: list[str], dimensions_to_use: list[str] = None) -> torch.Tensor:
+        return self.get_reward(prompts, responses, dimensions_to_use)
 
 
 if __name__ == "__main__":
@@ -173,25 +181,28 @@ Overall, providing clear and concise information and context can help ChatGPT pr
     test_response_bad = "Yes, you can feed ChatGPT information to help it answer questions better. This is called \"training\" the model, and it involves providing it with examples of good and bad responses to questions. You can also use tools like GPT-J's \"Teacher\" mode to provide more detailed feedback on its responses."
     test_response_empty = ""
 
-    print("\n--- Testing Good Response ---")
+    print("\n--- Testing avg reward ---")
     reward_good = reward_model.get_reward([test_prompt], [test_response_good])
-    print(f"Final Reward (Good): {reward_good.item():.4f}")
+    print(f"Final Reward of good response: {reward_good.item():.4f}")
 
-    print("\n--- Testing Bad Response ---")
     reward_bad = reward_model.get_reward([test_prompt], [test_response_bad])
-    print(f"Final Reward (Bad): {reward_bad.item():.4f}")
+    print(f"Final Reward of bad response: {reward_bad.item():.4f}")
 
-    print("\n--- Testing Batch & Empty Response ---")
+    print("\n--- Testing batch and empty responses ---")
     rewards_batch = reward_model.get_reward(
         [test_prompt, test_prompt, "What is 2+2?"],
         [test_response_good, test_response_bad, test_response_empty]
     )
-    print(f"Final Rewards (Batch): {rewards_batch.tolist()}")
+    print(f"Final rewards (Batch): {rewards_batch.tolist()}")
 
     print("\n--- Testing Specific Dimension ---")
-    correctness_score = reward_model.get_dimension_score(test_prompt, test_response_bad, "correctness")
-    print(f"Correctness Score (Bad Response): {correctness_score:.4f}")
-
     helpfulness_score = reward_model.get_dimension_score(test_prompt, test_response_good, "helpfulness")
-    print(f"Helpfulness Score (Good Response): {helpfulness_score:.4f}")
+    print(f"Helpfulness score of good response: {helpfulness_score:.4f}")
+
+    helpfulness_score = reward_model.get_dimension_score(test_prompt, test_response_bad, "helpfulness")
+    print(f"Helpfulness score of bad response: {helpfulness_score:.4f}")
+
+    print("\n--- Testing model forward ---")
+    reward_good = reward_model([test_prompt], [test_response_good])
+    print(f"Explainable RM output (reward): {reward_good.item():.4f}")
 

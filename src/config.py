@@ -12,7 +12,7 @@ HF_TOKEN = os.getenv('HF_TOKEN')
 BASE_MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
 JUDGE_MODEL_NAME = BASE_MODEL_NAME
 ADAPTER_CLASS = "lora"
-MAX_SEQ_LENGTH=2048
+MAX_SEQ_LENGTH=256
 
 
 # Dataset config
@@ -33,7 +33,7 @@ DIMENSION_DESCRIPTIONS = {
     "complexity": f"Evaluates the intellectual depth or domain expertise required to write the response ({REWARD_SCORE_MIN}=basic competency, {REWARD_SCORE_MAX}=deep expertise).",
 }
 
-# EVAL_DATASET_NAME = "Anthropic/hh-rlhf"
+# EVAL_DATASET_NAME = "Anthropic/hh-rlhf"  # ?
 
 
 # Reward model config
@@ -51,16 +51,12 @@ Response:
 {{response}}
 
 Score ({REWARD_SCORE_MIN}-{REWARD_SCORE_MAX}):"""
-# how to use template
-# print(REWARD_JUDGE_PROMPT_TEMPLATE.format(dimension="helpfulness", dimension_description=DIMENSION_DESCRIPTIONS["helpfulness"], prompt="Test prompt", response="Test response"))
 
 
 # Training config
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 OUTPUT_DIR = "results"
 LOG_WITH = "wandb"
-# MAX_RL_STEPS = 200 # Define total optimization steps for RL training
-# SAVE_FREQ = 50 # Save checkpoints every N steps
 
 # LoRA config
 LORA_R = 16
@@ -69,22 +65,20 @@ LORA_DROPOUT = 0.05
 LORA_TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
 
 # RL config
-RL_BATCH_SIZE = 8
-RL_MAX_NEW_TOKENS = 128
-RL_TEMPERATURE = 0.7
-RL_TOP_K = 50
-RL_TOP_P = 0.9
+RL_BATCH_SIZE = 1
+RL_MAX_NEW_TOKENS = MAX_SEQ_LENGTH
+RL_TEMPERATURE = 0.2
+RL_TOP_K = 0.0
+RL_TOP_P = 1.0
 KL_PENALTY_BETA = 0.1
 
 # PPO config
+PPO_MINI_BATCH_SIZE = 1
+PPO_GRAD_ACCUMULATION_PPO = 4
+PPO_NUM_EPOCHS=1
 PPO_LEARNING_RATE = 1e-5
-PPO_MINI_BATCH_SIZE = 4
-PPO_GRAD_ACCUMULATION_PPO = 2
-PPO_CLIP_EPSILON = 0.2
-PPO_VALUE_CLIP = 0.2
-PPO_GAMMA = 1.0
-PPO_LAM = 0.95
-PPO_EPOCHS_PER_RL_STEP = 4
+PPO_WARMUP_RATIO = 0.1
+
 
 # REINFORCE config
 REINFORCE_LEARNING_RATE = 5e-6
@@ -95,7 +89,6 @@ REINFORCE_BASELINE_ALPHA = 0.99
 
 # HF Hub config
 HF_HUB_USERNAME = "MilyaShams"
-HF_TOKEN = os.getenv("HF_TOKEN")
 PPO_HUB_REPO_ID = f"{HF_HUB_USERNAME}/{BASE_MODEL_NAME.split('/')[-1]}-ppo-explainable"
 REINFORCE_HUB_REPO_ID = f"{HF_HUB_USERNAME}/{BASE_MODEL_NAME.split('/')[-1]}-reinforce-explainable"
 # REWARD_MODEL_HUB_REPO_ID = f"{HF_HUB_USERNAME}/{BASE_MODEL_NAME.split('/')[-1]}-explainable-RM"
