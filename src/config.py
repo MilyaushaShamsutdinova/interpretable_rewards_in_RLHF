@@ -6,6 +6,7 @@ load_dotenv()
 
 SEED=42
 HF_TOKEN = os.getenv('HF_TOKEN')
+WANDB_API = os.getenv('WANDB_API')
 
 
 # Model config
@@ -57,6 +58,7 @@ Score ({REWARD_SCORE_MIN}-{REWARD_SCORE_MAX}):"""
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 OUTPUT_DIR = "results"
 LOG_WITH = "wandb"
+SAVE_FREQ = 100
 
 # LoRA config
 LORA_R = 16
@@ -85,6 +87,7 @@ REINFORCE_LEARNING_RATE = 5e-6
 REINFORCE_GRAD_ACCUMULATION = 2
 REINFORCE_BASELINE_TYPE = "moving_average"
 REINFORCE_BASELINE_ALPHA = 0.99
+REINFORCE_NUM_EPOCHS = 1
 
 
 # HF Hub config
