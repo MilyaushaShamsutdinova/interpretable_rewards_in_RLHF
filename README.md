@@ -6,7 +6,7 @@
 
 ## Abstract
 
-This project aimed to implement and compare two Reinforcement Learning (RL) algorithms, Proximal Policy Optimization (PPO) and REINFORCE with baseline, for aligning Large Language Models (LLMs) using an *explainable* reward signal. Inspired by the "Explainable Rewards in RLHF Using LLM-as-a-Judge" paper, the core idea was to replace the traditional opaque reward model with an LLM acting as a judge, scoring responses along multiple predefined dimensions (e.g., helpfulness, correctness). The goal was to investigate how PPO and REINFORCE differ in performance, stability, and their ability to optimize for these explicit dimensions when trained with this explainable reward mechanism. Key components, including the explainable reward model, data preprocessing, and training setups for both PPO (using the TRL library) and REINFORCE (manual implementation), were developed. However, runtime errors were encountered during the execution of both training processes, preventing the successful generation of fully trained models and subsequent comparative analysis of results. This report details the project's methodology, the implementation work completed, the challenges faced, and discusses the expected outcomes had the training been successful.
+This project aimed to implement and compare two Reinforcement Learning from Human Feedback (RLHF) algorithms, Proximal Policy Optimization (PPO) and REINFORCE with baseline, for aligning Large Language Models (LLMs) using an *explainable* reward signal. Inspired by the *"Explainable Rewards in RLHF Using LLM-as-a-Judge"* paper, the core idea was to replace the traditional opaque reward model with an LLM acting as a judge, scoring responses along multiple predefined dimensions (e.g., helpfulness, correctness). The goal was to investigate how PPO and REINFORCE differ in performance, stability, and their ability to optimize for these explicit dimensions when trained with this explainable reward mechanism. Key components, including the explainable reward model, data preprocessing, and training setups for both PPO (using the TRL library) and REINFORCE (manual implementation), were developed. However, runtime errors were encountered during the execution of both training processes, preventing the successful generation of fully trained models and subsequent comparative analysis of results. This report details the project's methodology, the implementation work completed, the challenges faced, and discusses the expected outcomes had the training been successful.
 
 
 ## 1. Introduction
@@ -18,7 +18,7 @@ This project addresses the opacity issue by adopting the methodology proposed in
 The primary goal of this project was to implement this explainable reward mechanism and use it to compare two distinct policy gradient RL algorithms:
 
 1.  **Proximal Policy Optimization (PPO):** A popular actor-critic algorithm widely used in RLHF, known for its relative stability achieved through clipped surrogate objectives (Schulman et al., 2017).
-2.  **REINFORCE with Baseline:** A fundamental policy gradient algorithm that directly optimizes the expected return, often considered simpler but potentially less stable than PPO, especially in high-variance environments (Williams, 1992). The "Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs" paper suggests that the typical assumptions motivating PPO might be less relevant in the LLM fine-tuning context, potentially making simpler algorithms like REINFORCE viable and efficient.
+2.  **REINFORCE with Baseline:** A fundamental policy gradient algorithm that directly optimizes the expected return, often considered simpler but potentially less stable than PPO, especially in high-variance environments (Williams, 1992). The *"Back to Basics: Revisiting REINFORCE Style Optimization for Learning from Human Feedback in LLMs"* paper suggests that the typical assumptions motivating PPO might be less relevant in the LLM fine-tuning context, potentially making simpler algorithms like REINFORCE viable and efficient.
 
 By comparing these two algorithms using the same explainable reward signal, this project aimed to shed light on their respective performance, training dynamics, and effectiveness in optimizing for specific, interpretable aspects of LLM behavior.
 
@@ -28,17 +28,17 @@ By comparing these two algorithms using the same explainable reward signal, this
 
 The core of the project follows the explainable RLHF framework:
 
-1.  **Dimension Identification:** Define key dimensions relevant for evaluating LLM responses based on the target task (e.g., helpfulness, correctness, coherence, verbosity from HelpSteer2).
+1.  **Dimension Identification:** Define key dimensions relevant for evaluating LLM responses based on the target task.
 2.  **LLM-as-a-Judge Scoring:** Use a capable LLM (the "Judge") to score generated responses along each identified dimension based on specific definitions and scoring rubrics provided via prompting.
-3.  **Reward Aggregation:** Combine the individual dimension scores into a single scalar reward signal (e.g., using simple averaging) to be used by the RL algorithm.
+3.  **Reward Aggregation:** Combine the individual dimension scores into a single scalar reward signal to be used by the RL algorithm.
 4.  **RL Fine-tuning:** Use the aggregated explainable reward to fine-tune the base LLM using either PPO or REINFORCE.
 
-This process is illustrated conceptually in Figure 1 of the project proposal.
+![pic](https://github.com/MilyaushaShamsutdinova/interpretable_rewards_in_RLHF/blob/main/assets/explainable_rm.png?raw=true)
 
 ### 2.2. Base Model and Dataset
 
 *   **Base LLM:** `Qwen/Qwen1.5-0.5B-Instruct` was selected as the base instruction-tuned model to be aligned via RL. This model provides a strong starting point, having already undergone initial instruction tuning.
-*   **Dataset for RL Prompts:** The `nvidia/HelpSteer2` dataset was used as the source of prompts for the RL training phase. Only the `prompt` column was extracted for training the PPO and REINFORCE algorithms. A subset of the training split (1000 samples) and validation split (100 samples) was used for development runs.
+*   **Dataset for RL Prompts:** The `nvidia/HelpSteer2` dataset was used as the source of prompts for the RL training phase. Only the `prompt` column was extracted for training the PPO and REINFORCE algorithms. A subset of the training split and validation split was used for development runs.
 *   **SFT Skipping:** Given that an instruction-tuned model was used as the base, the standard SFT step was skipped to simplify the pipeline and focus on the RL comparison, following the rationale discussed during the project refinement phase. The base instruction-tuned model served as both the initial policy and the reference model for KL penalty calculation.
 
 ### 2.3. Explainable Reward Model Implementation (`src/reward.py`)
@@ -93,7 +93,7 @@ Two RL algorithms were implemented in separate Jupyter notebooks:
 ## 3. Implementation Details
 
 *   **Libraries:** `transformers`, `datasets`, `trl`, `peft`, `torch`, `numpy`, `wandb`, `huggingface_hub`, `python-dotenv`, `tenacity`, `tqdm`.
-*   **Hardware:** Training was attempted on available GPU resources (details might be added if known, e.g., Kaggle P100, Colab T4).
+*   **Hardware:** Training was attempted on available GPU resources (Kaggle P100, locally on GeForce RTX 4060).
 *   **Efficiency:** 4-bit quantization (`bitsandbytes`) and LoRA (`peft`) were used for parameter-efficient fine-tuning to make training feasible on constrained hardware.
 *   **Configuration:** Centralized configuration was managed in `src/config.py`.
 *   **Code Structure:** Organized into `src/` for modules, `data/` for preprocessing, and `notebooks/` for exploration and training execution.
@@ -109,8 +109,8 @@ The plan involved:
 
 **Actual Execution:**
 *   Data preprocessing and reward model implementation were completed successfully.
-*   The PPO training notebook (`ppo_training.ipynb`) was executed, but encountered an `AttributeError: 'tuple' object has no attribute 'logits'` during the internal `trl` training loop (`ppo_trainer.train()`). This error typically indicates an issue with how the reference model or its outputs are being handled within the TRL framework, potentially related to the model class used (`AutoModelForCausalLMWithValueHead`) or PEFT interactions.
-*   The REINFORCE training notebook (`reinforce_training.ipynb`) was executed after refactoring into helper functions. It encountered an `IndexError: index -1 is out of bounds for dimension 0 with size 0` during the `policy_model.generate` call within the manual loop, followed by a `RuntimeError: element 0 of tensors does not require grad and does not have a grad_fn` during `backward()`. The `IndexError` suggests an issue with generation internals (potentially related to caching or state in PEFT models), and the `RuntimeError` occurred because the generation failure broke the computational graph, resulting in a loss tensor with no gradient history.
+*   The **PPO training** notebook (`ppo_training.ipynb`) was executed, but encountered an `AttributeError: 'tuple' object has no attribute 'logits'` during the internal `trl` training loop. This error typically indicates an issue with how the reference model or its outputs are being handled within the TRL framework, potentially related to the model class used (`AutoModelForCausalLMWithValueHead`) or PEFT interactions.
+*   The **REINFORCE training** notebook (`reinforce_training.ipynb`) was executed after refactoring into helper functions. It encountered an `IndexError: index -1 is out of bounds for dimension 0 with size 0` during the `policy_model.generate` call within the manual loop. The error suggests an issue with generation internals (potentially related to caching or state in PEFT models).
 
 ## 5. Challenges encountered
 
@@ -127,7 +127,7 @@ The plan involved:
 Had the training runs completed successfully, the following comparisons and analyses were planned:
 
 *   **Performance Comparison:** Plotting the average explainable reward (aggregated score) on the validation set over training steps/epochs for both PPO and REINFORCE. This would show which algorithm converged faster or reached a higher final reward score according to the explainable metric.
-*   **Stability Comparison:** Analyzing the variance of rewards and the KL divergence from the reference model during training. It was hypothesized (based on the "Back to Basics" paper) that REINFORCE might be more competitive than expected in the LLM fine-tuning setting due to strong initialization, potentially challenging PPO's perceived stability advantage.
+*   **Stability Comparison:** Analyzing the variance of rewards and the KL divergence from the reference model during training. It was hypothesized (based on the "Back to Basics" paper) that PPO might be more competitive than expected in the LLM fine-tuning setting due to strong initialization, potentially challenging REINFORCE algorithm to perceive stability advantage.
 *   **Explainability Analysis:** Generating responses from the final PPO-tuned and REINFORCE-tuned models on test prompts. Each response would be evaluated by the LLM-as-a-Judge across all dimensions. This would allow analysis of whether the models specialized (e.g., PPO high on helpfulness, REINFORCE high on coherence) or if they improved similarly across dimensions. Visualizations showing the dimensional score breakdown for specific examples were planned (as per the proposal deliverables).
 *   **Qualitative Evaluation:** Manually inspecting generated outputs to assess fluency, coherence, and alignment beyond the quantitative scores.
 
